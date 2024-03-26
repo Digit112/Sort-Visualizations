@@ -19,6 +19,66 @@ public class LoggedArray <T> {
 	private File fout;
 	private BufferedWriter foutStream;
 	
+	public int writesBetweenClock; // How many writes before System.nanoTime is appended to the file?
+	private int numWrites = 0;
+	
+	public LoggedArray(int initialCapacity, String outFileName) throws IOException {
+		arr = new ArrayList<T>(initialCapacity);
+		
+		fout = new File(outFileName);
+		foutStream = new BufferedWriter(new FileWriter(fout));
+		
+		writesBetweenClock = 6;
+		resetTime();
+	}
+	
+	public LoggedArray(String outFileName) throws IOException {
+		arr = new ArrayList<T>();
+		
+		fout = new File(outFileName);
+		foutStream = new BufferedWriter(new FileWriter(fout));
+		
+		writesBetweenClock = 6;
+		resetTime();
+	}
+	
+	// Fill constructor. Filling the array does appear in the log.
+	public LoggedArray(int initialSize, T fillVal, String outFileName) throws IOException {
+		arr = new ArrayList<T>(initialSize);
+		
+		fout = new File(outFileName);
+		foutStream = new BufferedWriter(new FileWriter(fout));
+		
+		writesBetweenClock = 6;
+		resetTime();
+		
+		for (int i = 0; i < initialSize; i++) {
+			add(fillVal);
+		}
+	}
+	
+	// Appends the current result of system.nanoTime() to the file if enough writes have occurred.
+	private void doWrite(String val, boolean stepTime) throws IOException {
+		foutStream.write(val);
+		
+		numWrites++;
+		if (stepTime && numWrites >= writesBetweenClock) {
+			writeTime();
+			numWrites = 0;
+		}
+	}
+	
+	// Writes the current time.
+	public void writeTime() throws IOException {
+		doWrite(String.format("Z%d\n", System.nanoTime()), false);
+	}
+	
+	// Writes the current time, but also causes the timer in the render to reset to 0.
+	public void resetTime() throws IOException {
+		doWrite(String.format("Y%d\n", System.nanoTime()), false);
+	}
+		
+	
 	// Converts to a string. Reads are not logged.
 	public String toString() {
 		String ret = "";
@@ -33,71 +93,32 @@ public class LoggedArray <T> {
 		return arr.size();
 	}
 	
-	public LoggedArray(int initialCapacity, String outFileName) throws IOException {
-		arr = new ArrayList<T>(initialCapacity);
-		
-		fout = new File(outFileName);
-		foutStream = new BufferedWriter(new FileWriter(fout));
-	}
-	
-	public LoggedArray(String outFileName) throws IOException {
-		arr = new ArrayList<T>();
-		
-		fout = new File(outFileName);
-		foutStream = new BufferedWriter(new FileWriter(fout));
-	}
-	
-	public T get(int i) {
-		try {
-			foutStream.write(String.format("r%d\n", i));
-		}
-		catch (IOException e) {
-			System.out.println("Failed to write get to file.");
-		}
+	public T get(int i) throws IOException {
+		doWrite(String.format("r%d\n", i), true);
 		
 		return arr.get(i);
 	}
 	
-	public void set(int i, T val) {
-		try {
-			foutStream.write(String.format("w%d:%s\n", i, val.toString()));
-		}
-		catch (IOException e) {
-			System.out.println("Failed to write set to file.");
-		}
+	public void set(int i, T val) throws IOException {
+		doWrite(String.format("w%d:%s\n", i, val.toString()), true);
 		
 		arr.set(i, val);
 	}
 	
-	public void add(T val) {
-		try {
-			foutStream.write(String.format("a:%s\n", val.toString()));
-		}
-		catch (IOException e) {
-			System.out.println("Failed to write add to file.");
-		}
+	public void add(T val) throws IOException {
+		doWrite(String.format("a:%s\n", val.toString()), true);
 		
 		arr.add(val);
 	}
 	
-	public void add(int pos, T val) {
-		try {
-			foutStream.write(String.format("i%d:%s\n", pos, val.toString()));
-		}
-		catch (IOException e) {
-			System.out.println("Failed to write insertion to file.");
-		}
+	public void add(int pos, T val) throws IOException {
+		doWrite(String.format("i%d:%s\n", pos, val.toString()), true);
 		
 		arr.add(pos, val);
 	}
 	
-	public void swap(int i, int j) {
-		try {
-			foutStream.write(String.format("s%d,%d\n", i, j));
-		}
-		catch (IOException e) {
-			System.out.println("Failed to write swap to file.");
-		}
+	public void swap(int i, int j) throws IOException {
+		doWrite(String.format("s%d,%d\n", i, j), true);
 		
 		T temp = arr.get(i);
 		arr.set(i, arr.get(j));
@@ -106,46 +127,28 @@ public class LoggedArray <T> {
 	
 	// highlight an index. This will appear in the log but will not effect the array.
 	// Setting the highlight a second time overwrites the previous highlight.
-	public void highlight(int i, int highlightVal) {
-		try {
-			foutStream.write(String.format("H%d,%d\n", i, highlightVal));
-		}
-		catch (IOException e) {
-			System.out.println("Failed to write highlight to file.");
-		}
+	public void highlight(int i, int highlightVal) throws IOException {
+		doWrite(String.format("H%d,%d\n", i, highlightVal), false);
 	}
 	
 	// un-highlight an index.
-	public void unhighlight(int i) {
-		try {
-			foutStream.write(String.format("U%d\n", i));
-		}
-		catch (IOException e) {
-			System.out.println("Failed to write unhighlight to file.");
-		}
+	public void unhighlight(int i) throws IOException {
+		doWrite(String.format("U%d\n", i), false);
 	}
 	
 	// un-highlight all indices.
-	public void unhighlightAll() {
-		try {
-			foutStream.write(String.format("U*\n"));
-		}
-		catch (IOException e) {
-			System.out.println("Failed to write unhighlightAll to file.");
-		}
+	public void unhighlightAll() throws IOException {
+		doWrite(String.format("U*\n"), false);
 	}
 	
 	// Set the title of a render. This can be changed at any time and is displayed in the final render.
-	public void setTitle(String newTitle) {
-		try {
-			foutStream.write(String.format("T:%s\n", newTitle));
-		}
-		catch (IOException e) {
-			System.out.println("Failed to write setTitle to file.");
-		}
+	public void setTitle(String newTitle) throws IOException {
+		doWrite(String.format("T:%s\n", newTitle), false);
 	}
 	
-	public void close() {
+	public void close() throws IOException {
+		writeTime();
+		
 		try {
 			foutStream.close();
 		}

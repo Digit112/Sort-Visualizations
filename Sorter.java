@@ -1,5 +1,6 @@
 import java.util.Random;
 import java.util.ArrayList;
+import java.io.IOException;
 
 public class Sorter {
 	private static <T> void printArr(T[] arr) {
@@ -72,8 +73,10 @@ public class Sorter {
 	
 	// Selection Sort.
 	// Repeatedly find the smallest of the unsorted elements and swap it with the left-most unsorted element, then mark it as sorted.
-	public static <T extends Comparable<T>> void selectionSort(LoggedArray<T> list) {
+	public static <T extends Comparable<T>> void selectionSort(LoggedArray<T> list) throws IOException {
 		list.setTitle("Selection Sort");
+		list.resetTime();
+		
 		for (int i = 0; i < list.size(); i++) {
 			list.highlight(i, 0);
 			
@@ -104,8 +107,10 @@ public class Sorter {
 	// Insertion sort.
 	// Take the left-most unsorted element and move it left as long as its left neighbor is larger than itself.
 	// Instead of repeatedly swapping, this algorithm moves elements right repeatedly and only writes each unsorted element back to the list once.
-	public static <T extends Comparable<T>> void insertionSort(LoggedArray<T> list) {
+	public static <T extends Comparable<T>> void insertionSort(LoggedArray<T> list) throws IOException {
 		list.setTitle("Insertion Sort");
+		list.resetTime();
+		
 		for (int i = 1; i < list.size(); i++) {
 			T movVal = list.get(i);
 			for (int j = i-1; j >= 0; j--) {
@@ -130,13 +135,15 @@ public class Sorter {
 	// Select a pivot and move all elements to its right or left depending on the result of compareTo.
 	// Then, recursively partition each new section.
 	// Works particularly well with nearly sorted lists.
-	public static <T extends Comparable<T>> void quickSort(LoggedArray<T> list) {
+	public static <T extends Comparable<T>> void quickSort(LoggedArray<T> list) throws IOException {
 		list.setTitle("Quick Sort");
+		list.resetTime();
+		
 		quickSortRecurse(list, 0, list.size() - 1);
 	}
 	
 	// Quick Sort a portion of a list.
-	private static <T extends Comparable<T>> void quickSortRecurse(LoggedArray<T> list, int i, int k) {
+	private static <T extends Comparable<T>> void quickSortRecurse(LoggedArray<T> list, int i, int k) throws IOException {
 		// If the high and low value are equal, then the list is already sorted.
 		if (k == i) {
 			return;
@@ -154,7 +161,7 @@ public class Sorter {
 	// Partition a portion of a list into two smaller portions.
 	// Returns the new index of the pivot (or an equal value).
 	// Everything to the left of the returned index will be <= everything to the right of it.
-	private static <T extends Comparable<T>> int partition(LoggedArray<T> list, int l, int h) {
+	private static <T extends Comparable<T>> int partition(LoggedArray<T> list, int l, int h) throws IOException {
 		T pivot = list.get( l + (h - l) / 2 );
 		// System.out.println(pivot);
 		
@@ -186,55 +193,58 @@ public class Sorter {
 	}
 	
 	// Merge sort.
-	public static <T extends Comparable<T>> void mergeSort(LoggedArray<T> list) {
+	public static <T extends Comparable<T>> void mergeSort(LoggedArray<T> list) throws IOException {
 		list.setTitle("Merge Sort");
-		mergeSortRecurse(list, 0, list.size() - 1);
+		
+		LoggedArray<T> temp = new LoggedArray(list.size(), 0, "sublog.txt");
+		temp.setTitle("Merge Sort - Temporary Storage");
+		
+		list.resetTime();
+		temp.resetTime();
+		
+		mergeSortRecurse(temp, list, 0, list.size() - 1);
+		
+		temp.close();
 	}
 	
 	// Merge sort a portion of a list.
-	public static <T extends Comparable<T>> void mergeSortRecurse(LoggedArray<T> list, int l, int h) {
+	public static <T extends Comparable<T>> void mergeSortRecurse(LoggedArray<T> temp, LoggedArray<T> list, int l, int h) throws IOException {
 		if (l == h) {
 			return;
 		}
 		
 		int midpoint = l + (h-l) / 2; // This value is included in the lower list.
 		
-		mergeSortRecurse(list, l, midpoint);
-		mergeSortRecurse(list, midpoint+1, h);
+		mergeSortRecurse(temp, list, l, midpoint);
+		mergeSortRecurse(temp, list, midpoint+1, h);
 		
 		// Now we know that the left and right halves of the list are sorted.
 		// We only need to combine them.
 		
-		// Sorted list will be placed here.
-		ArrayList<T> temp = new ArrayList<T>(h - l + 1);
-		
 		int i = l;
 		int j = midpoint+1;
-		int k = 0;
-		while (true) {
+		int k = l;
+		while (k <= h) {
 			if (i <= midpoint && j <= h) {
 				T i_val = list.get(i);
 				T j_val = list.get(j);
 				
 				if (i_val.compareTo(j_val) < 0) {
-					temp.add(i_val);
+					temp.set(k, i_val);
 					i++;
 				}
 				else {
-					temp.add(j_val);
+					temp.set(k, j_val);
 					j++;
 				}
 			}
 			else if (i <= midpoint) {
-				temp.add(list.get(i));
+				temp.set(k, list.get(i));
 				i++;
 			}
 			else if (j <= h) {
-				temp.add(list.get(j));
+				temp.set(k, list.get(j));
 				j++;
-			}
-			else {
-				break;
 			}
 			
 			k++;
@@ -242,7 +252,7 @@ public class Sorter {
 		
 		// Copy the merged list back to the actual list.
 		for (int ind = l; ind <= h; ind++) {
-			list.set(ind, temp.get(ind-l));
+			list.set(ind, temp.get(ind));
 		}
 	}
 }
