@@ -40,6 +40,8 @@ videoFrameRate = 25
 # This determines how many steps those frequencies live for.
 audioDuration = 8
 
+audioVolume = 0.5
+
 # When an index is read or written to (or swapped with another) it gets highlighted.
 # For how many frames does it stay highlighted?
 # Does not effect indices which were manually highlighted.
@@ -142,7 +144,7 @@ class UnloggedArray:
 			self.audioSamplePoint += 2 * math.pi / (audioSampleRate / self.audioFreq)
 			self.audioSamplePoint = math.fmod(self.audioSamplePoint, 2 * math.pi)
 			
-			return int((math.sin(self.audioSamplePoint) + 1) / 2 * 4000 + 4000)
+			return int((math.sin(self.audioSamplePoint) + 1) / 2 * 65535 * audioVolume)
 		
 		else:
 			return 0
@@ -412,7 +414,6 @@ while True:
 			moreFrames = sortingLog.step()
 			
 			# Write audio
-			print(sortingLog.audioFreq)
 			if sortingLog.audioFout is not None and moreFrames:
 				videoTimeSeconds = (frameCounter + i/stepsPerRender) / videoFrameRate
 				idealNumFrames = videoTimeSeconds * audioSampleRate

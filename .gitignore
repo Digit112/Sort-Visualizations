@@ -2,3 +2,5 @@
 out/*.png
 *.txt
 *.mp4
+*.wav
+final/*
