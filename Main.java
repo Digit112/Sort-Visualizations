@@ -16,6 +16,7 @@ public class Main {
 		System.out.println("Unsorted:");
 		System.out.println(list);
 		
+		// CHANGE ME to desired sorting algorithm
 		Sorter.mergeSort(list);
 		
 		list.close();

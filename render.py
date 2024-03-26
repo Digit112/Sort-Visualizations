@@ -8,7 +8,7 @@ import struct
 # Note: Although the Sorter and LoggedArray classes are generics which can handle many types, this program only works on arrays of integers.
 
 # Which file were the logs dumped into?
-logFileName = "log.txt"
+logFileName = "sublog.txt"
 
 # How many steps to execute between renders? Highlights and Unhighlights do not count as steps.
 stepsPerRender = 16
@@ -17,10 +17,10 @@ stepsPerRender = 16
 # This specifies a synchrony file output by a previous use of render.py.
 # If specified, output a video of the same length as the previous run which stays in sync with it.
 # Useful for generating videos of multiple arrays which were manipulated around the same time, as in the case of merge sort.
-synchronyFileIn = ""
+synchronyFileIn = "synchrony.txt"
 
 # If not empty, specifies the filename to output a synchrony file to.
-synchronyFileOut = "synchrony.txt"
+synchronyFileOut = ""
 
 if (synchronyFileIn != "" and synchronyFileIn == synchronyFileOut):
 	print("SynchronyFileIn and synchronyFileOut cannot be the same.")
@@ -38,7 +38,7 @@ videoFrameRate = 25
 # Each read/write/swap add frequencies to a list.
 # Every time the array is modified, the average of that list is taken and an appropriate number of audio samples are created.
 # This determines how many steps those frequencies live for.
-audioDuration = 8
+audioDuration = 4
 
 audioVolume = 0.5
 
@@ -48,7 +48,7 @@ audioVolume = 0.5
 modifyHighlightDuration = 1
 
 # Number of frames to render after all commands are exhausted.
-deadFrames = 12
+deadFrames = 50
 
 # Dimensions of the output frames.
 width = 1920
@@ -136,8 +136,10 @@ class UnloggedArray:
 		self.index = 0
 	
 	def addFreqFromVal(self, val):
-		self.audioFreqArr.append(val / self.maxVal * 380 + 120) # Uses linear interpolation where it should likely use exponential interpolation.
-		self.audioFreqAge.append(0)
+		if (self.maxVal > 0):
+			# Uses linear interpolation where it should likely use exponential interpolation.
+			self.audioFreqArr.append(val / self.maxVal * 380 + 120)
+			self.audioFreqAge.append(0)
 	
 	def getSample(self):
 		if self.audioFreq != -1:
@@ -206,6 +208,9 @@ class UnloggedArray:
 			self.read.append(None)
 			self.written.append(0)
 			self.swapped.append(None)
+			
+			if self.audioFout is not None:
+				self.freq = self.addFreqFromVal(val)
 		
 		elif command[0] == 'r':
 			ind = int( command[1:] )
