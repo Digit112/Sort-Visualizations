@@ -8,7 +8,7 @@ import struct
 # Note: Although the Sorter and LoggedArray classes are generics which can handle many types, this program only works on arrays of integers.
 
 # Which file were the logs dumped into?
-logFileName = "sublog.txt"
+logFileName = "log.txt"
 
 # How many steps to execute between renders? Highlights and Unhighlights do not count as steps.
 stepsPerRender = 16
@@ -17,20 +17,28 @@ stepsPerRender = 16
 # This specifies a synchrony file output by a previous use of render.py.
 # If specified, output a video of the same length as the previous run which stays in sync with it.
 # Useful for generating videos of multiple arrays which were manipulated around the same time, as in the case of merge sort.
-synchronyFileIn = "synchrony.txt"
+synchronyFileIn = ""
 
 # If not empty, specifies the filename to output a synchrony file to.
-synchronyFileOut = ""
+synchronyFileOut = "synchrony.txt"
 
 if (synchronyFileIn != "" and synchronyFileIn == synchronyFileOut):
 	print("SynchronyFileIn and synchronyFileOut cannot be the same.")
 	exit()
 
-# Output for the audio file
+# Output for the audio file. Will not write audio if this is an empty string.
 audioOutName = "audio.wav"
 
 # Sample rate of the audio
 audioSampleRate = 12000
+
+# Video FPS. If this is incorrect, the audio will not match the video.
+videoFrameRate = 25
+
+# Each read/write/swap add frequencies to a list.
+# Every time the array is modified, the average of that list is taken and an appropriate number of audio samples are created.
+# This determines how many steps those frequencies live for.
+audioDuration = 8
 
 # When an index is read or written to (or swapped with another) it gets highlighted.
 # For how many frames does it stay highlighted?
@@ -61,14 +69,14 @@ doDrawReadWrites = True
 doDrawSize = True
 
 # Colors
-bgColor = (0, 0, 0)
-fgColor = (250, 250, 250) # Font
-baseColor = (240, 240, 240)
-readColor = (20, 240, 20)
-writtenColor = (240, 20, 20)
-swappedColor = (220, 220, 20)
+bgColor      = (0,   0,   0  ) # Background
+fgColor      = (250, 250, 250) # Font
+baseColor    = (240, 240, 240) # Color of unmodified bars.
+readColor    = (20,  240, 20 ) # Color of bars that were recently read from.
+writtenColor = (240, 20,  20 ) # Color of bars that were recently written to.
+swappedColor = (220, 220, 20 ) # Color of bars that were recently swapped with others.
 
-# Highlight colors are overwrite read/write/swap colors.
+# Highlight colors overwrite read/write/swap colors.
 # The highlight on a bar indexes this list.
 highlightColors = [
 	(20, 20, 240),
@@ -86,13 +94,31 @@ class UnloggedArray:
 		self.reads = 0
 		self.writes = 0 # Does not count add operations or insertions.
 		
-		self.startTime = -1
+		self.firstTime = -1 # The first time recorded, not modified by a time reset.
+		self.startTime = -1 # The time from which the timer in the render measures. Set to currentTime by a time reset.
 		self.currentTime = -1
 		
-		self.audioFout = wave.open(audioOutName, "wb")
-		self.audioFout.setnchannels(1)
-		self.audioFout.setsampwidth(2)
-		self.audioFout.setframerate(audioSampleRate)
+		self.audioFout = None
+		if audioOutName != "":
+			self.audioFout = wave.open(audioOutName, "wb")
+			self.audioFout.setnchannels(1)
+			self.audioFout.setsampwidth(2)
+			self.audioFout.setframerate(audioSampleRate)
+			
+			self.audioData = b''
+			self.audioFreqArr = []
+			self.audioFreqAge = []
+			
+			self.audioFreq = -1
+			
+			# Okay, so this is a value from 0 to 2PI from which to sample a sin wave for the audio samples.
+			# This value is incremented each time getSample() is called.
+			# The amount it increases by is controlled by audioFreq.
+			# This prevents changes in the frequency from completely fucking the samples.
+			# It is 3:00am.
+			self.audioSamplePoint = 0
+		
+		self.maxVal = 0
 		
 		self.fout = None
 		if synchronyFileOut != "":
@@ -106,6 +132,20 @@ class UnloggedArray:
 		fin = open(inFileName, "r")
 		self.commands = fin.read().split("\n")[:-1]
 		self.index = 0
+	
+	def addFreqFromVal(self, val):
+		self.audioFreqArr.append(val / self.maxVal * 380 + 120) # Uses linear interpolation where it should likely use exponential interpolation.
+		self.audioFreqAge.append(0)
+	
+	def getSample(self):
+		if self.audioFreq != -1:
+			self.audioSamplePoint += 2 * math.pi / (audioSampleRate / self.audioFreq)
+			self.audioSamplePoint = math.fmod(self.audioSamplePoint, 2 * math.pi)
+			
+			return int((math.sin(self.audioSamplePoint) + 1) / 2 * 4000 + 4000)
+		
+		else:
+			return 0
 	
 	# Increments the age counter for all values in read, written, and swapped.
 	# Resets all values that are too old to "None"
@@ -134,6 +174,12 @@ class UnloggedArray:
 	# If a command is a highlight or unhighlight, calls itself again.
 	# Returns false if no commands remain to be retrieved, true otherwise.
 	def step(self):
+		# Eliminate old frequencies
+		if self.audioFout is not None:
+			while len(self.audioFreqArr) > 0 and self.audioFreqAge[0] >= audioDuration:
+				del self.audioFreqArr[0]
+				del self.audioFreqAge[0]
+		
 		if self.index >= len(self.commands):
 			return False
 		
@@ -150,6 +196,9 @@ class UnloggedArray:
 			
 			val = int(command[strStart:])
 			
+			if val > self.maxVal:
+				self.maxVal = val
+			
 			self.arr.append( val )
 			self.highlights.append(None)
 			self.read.append(None)
@@ -161,6 +210,9 @@ class UnloggedArray:
 			self.read[ind] = 0;
 			
 			self.reads += 1
+			
+			if self.audioFout is not None:
+				self.freq = self.addFreqFromVal(self.arr[ind])
 		
 		elif command[0] == 'w':
 			if (strStart == 0):
@@ -169,10 +221,16 @@ class UnloggedArray:
 			val = int( command[strStart:] )
 			ind = int( command[1:strStart-1] )
 			
+			if val > self.maxVal:
+				self.maxVal = val
+			
 			self.arr[ind] = val
 			
 			self.written[ind] = 0
 			self.writes += 1
+			
+			if self.audioFout is not None:
+				self.freq = self.addFreqFromVal(val)
 		
 		elif command[0] == 's':
 			delimiter = command.find(",")
@@ -190,6 +248,9 @@ class UnloggedArray:
 			self.swapped[ind2] = 0
 			self.reads += 2
 			self.writes += 2
+			
+			if self.audioFout is not None:
+				self.freq = self.addFreqFromVal((self.arr[ind1] + self.arr[ind2]) / 2)
 		
 		elif command[0] == 'i':
 			if (strStart == -1):
@@ -197,6 +258,9 @@ class UnloggedArray:
 			
 			val = int( command[strStart:] )
 			ind = int( command[1:strStart] )
+			
+			if val > self.maxVal:
+				self.maxVal = val
 			
 			self.arr.insert(ind, val)
 			
@@ -236,7 +300,8 @@ class UnloggedArray:
 		elif command[0] == 'Z':
 			self.currentTime = int( command[1:] )
 			
-			if self.startTime == -1:
+			if self.firstTime == -1:
+				self.firstTime = self.currentTime
 				self.startTime = self.currentTime
 			
 			self.step()
@@ -245,16 +310,39 @@ class UnloggedArray:
 			self.currentTime = int( command[1:] )
 			self.startTime = self.currentTime
 			
+			if self.firstTime == -1:
+				self.firstTime = self.currentTime
+			
 			self.step()
 			
 		else:
 			print("Command '" + command[0] + "' not recognized.")
 		
+		# Recalculate audio frequency.
+		if self.audioFout is not None:
+			self.audioFreq = 0
+			for freq in self.audioFreqArr:
+				self.audioFreq += freq
+			
+			if len(self.audioFreqArr) > 0:
+				self.audioFreq /= len(self.audioFreqArr)
+			else:
+				self.audioFreq = -1
+			
+			# Age audio frequencies
+			for i in range(len(self.audioFreqArr)):
+				self.audioFreqAge[i] += 1
+			
 		return True
 	
 	def __del__(self):
 		if self.fout is not None:
 			self.fout.close()
+		
+		if self.audioFout is not None:
+			print("Saving audio to file...")
+			self.audioFout.writeframes(self.audioData)
+			self.audioFout.close()
 
 # Takes three two-tuples. Returns the second value in the tuple with the lowest first value.
 # A first value of None is interpreted as being infinitely large. If all first values are None, returns None.
@@ -301,6 +389,7 @@ if synchronyFileIn != "":
 
 moreFrames = True
 frameCounter = 0
+audioFrameCounter = 0
 while True:
 	if doSynchrony:
 		# Step forward until we have an accurate timer or there are no steps remaining.
@@ -321,6 +410,17 @@ while True:
 	else:
 		for i in range(stepsPerRender):
 			moreFrames = sortingLog.step()
+			
+			# Write audio
+			print(sortingLog.audioFreq)
+			if sortingLog.audioFout is not None and moreFrames:
+				videoTimeSeconds = (frameCounter + i/stepsPerRender) / videoFrameRate
+				idealNumFrames = videoTimeSeconds * audioSampleRate
+				
+				while audioFrameCounter < idealNumFrames and sortingLog.audioFreq != -1:
+					sortingLog.audioData += struct.pack("<H", sortingLog.getSample())
+					
+					audioFrameCounter += 1
 		
 		if not moreFrames:
 			deadFrames -= 1
@@ -331,13 +431,7 @@ while True:
 	img = Image.new("RGB", (width, height), bgColor)
 	drw = ImageDraw.Draw(img)
 	
-	maxValue = 0
 	if len(sortingLog.arr) > 0:
-		# Get the maximum value in the list to size the bars.
-		for val in sortingLog.arr:
-			if val > maxValue:
-				maxValue = val
-		
 		# Calculate sizing for all bars
 		barSpaceWidth = drwWidth / len(sortingLog.arr)
 		barWidth = barSpaceWidth * barWidthFraction
@@ -345,8 +439,8 @@ while True:
 		for i in range(len(sortingLog.arr)):
 			# Calculate height for this bar.
 			barHeight = drwHeight
-			if maxValue > 0:
-				barHeight = sortingLog.arr[i] / maxValue * drwHeight
+			if sortingLog.maxVal > 0:
+				barHeight = sortingLog.arr[i] / sortingLog.maxVal * drwHeight
 			
 			# Calculate position of upper-right and lower-left corners of this bar.
 			barPosLow = (
