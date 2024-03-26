@@ -74,6 +74,7 @@ public class Sorter {
 	// Selection Sort.
 	// Repeatedly find the smallest of the unsorted elements and swap it with the left-most unsorted element, then mark it as sorted.
 	public static <T extends Comparable<T>> void selectionSort(LoggedArray<T> list) throws IOException {
+		System.out.println("Using selection sort...");
 		list.setTitle("Selection Sort");
 		list.resetTime();
 		
@@ -81,16 +82,18 @@ public class Sorter {
 			list.highlight(i, 0);
 			
 			// Find minimum value among unsorted entries.
-			int minIndex = 0;
-			T minVal;
+			int minIndex = i;
+			T minVal = list.get(minIndex);
 			for (int j = i+1; j < list.size(); j++) {
 				T val = list.get(j);
-				if (val.compareTo(list.get(minIndex)) < 0) {
-					list.unhighlight(minIndex);
+				if (val.compareTo(minVal) < 0) {
+					if (minIndex != i) {
+						list.unhighlight(minIndex);
+					}
+					
 					list.highlight(j, 1);
 					
 					minIndex = j;
-					
 					minVal = val;
 				}
 			}
@@ -108,6 +111,7 @@ public class Sorter {
 	// Take the left-most unsorted element and move it left as long as its left neighbor is larger than itself.
 	// Instead of repeatedly swapping, this algorithm moves elements right repeatedly and only writes each unsorted element back to the list once.
 	public static <T extends Comparable<T>> void insertionSort(LoggedArray<T> list) throws IOException {
+		System.out.println("Using insertion sort...");
 		list.setTitle("Insertion Sort");
 		list.resetTime();
 		
@@ -136,6 +140,7 @@ public class Sorter {
 	// Then, recursively partition each new section.
 	// Works particularly well with nearly sorted lists.
 	public static <T extends Comparable<T>> void quickSort(LoggedArray<T> list) throws IOException {
+		System.out.println("Using quick sort...");
 		list.setTitle("Quick Sort");
 		list.resetTime();
 		
@@ -194,6 +199,7 @@ public class Sorter {
 	
 	// Merge sort.
 	public static <T extends Comparable<T>> void mergeSort(LoggedArray<T> list) throws IOException {
+		System.out.println("Using merge sort...");
 		list.setTitle("Merge Sort");
 		
 		LoggedArray<T> temp = new LoggedArray(list.size(), 0, "sublog.txt");

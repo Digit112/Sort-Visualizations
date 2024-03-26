@@ -19,6 +19,9 @@ public class LoggedArray <T> {
 	private File fout;
 	private BufferedWriter foutStream;
 	
+	public int totalOps;
+	public int totalMetaOps;
+	
 	public int writesBetweenClock; // How many writes before System.nanoTime is appended to the file?
 	private int numWrites = 0;
 	
@@ -58,11 +61,18 @@ public class LoggedArray <T> {
 	}
 	
 	// Appends the current result of system.nanoTime() to the file if enough writes have occurred.
-	private void doWrite(String val, boolean stepTime) throws IOException {
+	private void doWrite(String val, boolean isMeta) throws IOException {
 		foutStream.write(val);
 		
+		if (isMeta) {
+			totalMetaOps++;
+		}
+		else {
+			totalOps++;
+		}
+		
 		numWrites++;
-		if (stepTime && numWrites >= writesBetweenClock) {
+		if (isMeta && numWrites >= writesBetweenClock) {
 			writeTime();
 			numWrites = 0;
 		}

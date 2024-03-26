@@ -8,7 +8,7 @@ import struct
 # Note: Although the Sorter and LoggedArray classes are generics which can handle many types, this program only works on arrays of integers.
 
 # Which file were the logs dumped into?
-logFileName = "sublog.txt"
+logFileName = "log.txt"
 
 # How many steps to execute between renders? Highlights and Unhighlights do not count as steps.
 stepsPerRender = 16
@@ -17,10 +17,10 @@ stepsPerRender = 16
 # This specifies a synchrony file output by a previous use of render.py.
 # If specified, output a video of the same length as the previous run which stays in sync with it.
 # Useful for generating videos of multiple arrays which were manipulated around the same time, as in the case of merge sort.
-synchronyFileIn = "synchrony.txt"
+synchronyFileIn = ""
 
 # If not empty, specifies the filename to output a synchrony file to.
-synchronyFileOut = ""
+synchronyFileOut = "synchrony.txt"
 
 if (synchronyFileIn != "" and synchronyFileIn == synchronyFileOut):
 	print("SynchronyFileIn and synchronyFileOut cannot be the same.")
@@ -52,7 +52,7 @@ deadFrames = 50
 
 # Dimensions of the output frames.
 width = 1920
-height = 540
+height = 1080
 
 # Size of the black border surrounding the render on all sides.
 borderTop = 80
@@ -62,7 +62,7 @@ borderBottom = 0
 
 # Fraction of space that a bar can take up which is actually used by that bar.
 # The remainder forms the gaps between the bars.
-barWidthFraction = 0.85
+barWidthFraction = 1
 
 # Whether to draw the title, time, read/writes, and array size saved to the LoggedArray log.
 doDrawTitle = True
@@ -377,7 +377,7 @@ def tripleAgeMin(a, b, c):
 
 sortingLog = UnloggedArray(logFileName)
 
-fnt = ImageFont.truetype("ubuntu mono/UbuntuMono-R.ttf", 16)
+fnt = ImageFont.truetype("ubuntu mono/UbuntuMono-R.ttf", 20)
 
 drwWidth = width - (borderLeft + borderRight)
 drwHeight = height - (borderTop + borderBottom)
@@ -484,14 +484,14 @@ while True:
 		drw.text((10, 10), sortingLog.title, fill=fgColor, font=fnt)
 	
 	if doDrawTime:
-		drw.text((10, 34), "Time: %.3fms" % ((sortingLog.currentTime - sortingLog.startTime) / 1000000), fill=fgColor, font=fnt)
+		drw.text((10, 36), "Time: %.3fms" % ((sortingLog.currentTime - sortingLog.startTime) / 1000000), fill=fgColor, font=fnt)
 	
 	if doDrawReadWrites:
-		drw.text((310, 10), "Reads: %d" % (sortingLog.reads), fill=fgColor, font=fnt)
-		drw.text((310, 34), "Writes: %d" % (sortingLog.writes), fill=fgColor, font=fnt)
+		drw.text((410, 10), "Reads: %d" % (sortingLog.reads), fill=fgColor, font=fnt)
+		drw.text((410, 36), "Writes: %d" % (sortingLog.writes), fill=fgColor, font=fnt)
 	
 	if doDrawSize:
-		drw.text((610, 10), "Size: %s" % (len(sortingLog.arr)), fill=fgColor, font=fnt)
+		drw.text((810, 10), "Size: %s" % (len(sortingLog.arr)), fill=fgColor, font=fnt)
 	
 	# Save this image.
 	img.save("out/%03d.png" % frameCounter)
