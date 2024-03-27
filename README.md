@@ -1,8 +1,8 @@
 # Sorting Algorithm Visualizations
 
-Main.java records the operations performed by a particular sorting algorithm on an array into a log file. render.py produces frames depicting the array at various points in time, which can be combined into a video. This allows the creation of videos that visualize sorting algorithms.
+Main.java records the operations performed by a particular sorting algorithm on an array into a log file. render.py produces frames depicting the array at various points in time, which can be combined into a video. This allows the creation of videos that visualize sorting algorithms. It also creates audio.
 
-render.py's parameters cannot be controlled from the command line (there are a lot of them) but they're right at the top of the file when you open it.
+Main.java's and render.py's parameters cannot be controlled from the command line. The parameters are at the top of the file.
 
 ## Quickstart
 
@@ -37,10 +37,9 @@ If you use an algorithm which also produced a sublog.txt, you may use render.py 
 - Go into render.py, change synchronyFileIn to the value of synchronyFileOut that was used for the previous render (synchrony.txt by default).
 - Change synchronyFileOut to something else, an empty string works fine.
 - Set logFileName to sublog.txt
-- Change audioOutName to something else or an empty string, this prevents overwriting the previous audio.
 - rerun render.py
 
-You can create the synchronous video with ffmpeg:
+You can create the synchronous video with FFmpeg:
 ```
 ffmpeg -i out/%03d.png out_sync.mp4
 ```
@@ -52,9 +51,9 @@ ffmpeg -i out.mp4 -i out_sync.mp4 -filter_complex vstack final.mp4
 
 You can use `hstack` if you prefer to have the videos side-by-side.
 
-## LoggedArray\<T\>
+## LoggedArray
 
-LoggedArray\<T\> is a wrapper for ArrayList\<T\> that outputs all of the operations performed on it into a log file with a specific format. It currently implements:
+LoggedArray is a wrapper for ArrayList\<Ineger\> that outputs all of the operations performed on it into a log file with a specific format. It currently implements:
 
 ```
 T get(int i)
@@ -91,13 +90,20 @@ void writeTime()
 void resetTime()
 ```
 
+LoggedArray will automatically write the current time every few array operations.
+
 ## Sorter
 
-Implements a few sorting algorithms as static member functions. All functions take only a LoggedArray\<T\> as a parameter and all sort in ascending order.
+Implements a few sorting algorithms as static member functions. All functions take only a LoggedArray as a parameter and all sort in ascending order.
 
 ```
+bubbleSort()
+cocktailShakerSort()
 selectionSort()
 insertionSort()
 quickSort()
 mergeSort()
+heapSort()
+tournamentSort()
+bogoSort()
 ```

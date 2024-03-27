@@ -4,14 +4,14 @@ import java.io.IOException;
 public class Main {
 	public static void main(String args[]) throws IOException {
 		// params
-		final int NUM_VALS = 160;
+		final int NUM_VALS = 512;
 		final int MAX_VAL = 1000;
 		
 		Random rand = new Random();
 		
 		System.out.println(String.format("Populating list with %d elements in the range [0, %d]...", NUM_VALS, MAX_VAL-1));
 		
-		LoggedArray<Integer> list = new LoggedArray<Integer>(NUM_VALS, "log.txt");
+		LoggedArray list = new LoggedArray(NUM_VALS, "log.txt");
 		list.setTitle("Populating list...");
 		for (int i = 0; i < NUM_VALS; i++) {
 			list.add(rand.nextInt(MAX_VAL));
@@ -21,7 +21,7 @@ public class Main {
 		System.out.println(list);
 		
 		// CHANGE ME to desired sorting algorithm
-		Sorter.selectionSort(list);
+		Sorter.tournamentSort(list);
 		
 		list.close();
 		

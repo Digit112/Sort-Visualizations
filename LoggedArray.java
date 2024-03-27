@@ -13,8 +13,8 @@ import java.io.IOException;
 // Additional operations exist which do not affect the code or return a value.
 // This includes highlighting, which marks an index.
 // The title of an array can also be set. This is displayed in the render.
-public class LoggedArray <T> {
-	private ArrayList<T> arr;
+public class LoggedArray {
+	private ArrayList<Integer> arr;
 	
 	private File fout;
 	private BufferedWriter foutStream;
@@ -26,7 +26,7 @@ public class LoggedArray <T> {
 	private int numWrites = 0;
 	
 	public LoggedArray(int initialCapacity, String outFileName) throws IOException {
-		arr = new ArrayList<T>(initialCapacity);
+		arr = new ArrayList(initialCapacity);
 		
 		fout = new File(outFileName);
 		foutStream = new BufferedWriter(new FileWriter(fout));
@@ -36,7 +36,7 @@ public class LoggedArray <T> {
 	}
 	
 	public LoggedArray(String outFileName) throws IOException {
-		arr = new ArrayList<T>();
+		arr = new ArrayList();
 		
 		fout = new File(outFileName);
 		foutStream = new BufferedWriter(new FileWriter(fout));
@@ -46,8 +46,8 @@ public class LoggedArray <T> {
 	}
 	
 	// Fill constructor. Filling the array does appear in the log.
-	public LoggedArray(int initialSize, T fillVal, String outFileName) throws IOException {
-		arr = new ArrayList<T>(initialSize);
+	public LoggedArray(int initialSize, int fillVal, String outFileName) throws IOException {
+		arr = new ArrayList(initialSize);
 		
 		fout = new File(outFileName);
 		foutStream = new BufferedWriter(new FileWriter(fout));
@@ -78,6 +78,35 @@ public class LoggedArray <T> {
 		}
 	}
 	
+	// Returns the parent of this node. Returns -1 if the index would be < 0.
+	public int binHeapParent(int i) {
+		int j = (int) Math.floor((i - 1) / 2);
+		if (j < 0) {
+			return -1;
+		}
+		else {
+			return j;
+		}
+	}
+	
+	// Returns the child of this node. Returns -1 if the index would be >= heapSize.
+	public int binHeapChild(int i, int heapSize, boolean getLeft) {
+		int j;
+		if (getLeft) {
+			j = 2*i + 1;
+		}
+		else {
+			j = 2*i + 2;
+		}
+		
+		if (j >= heapSize) {
+			return -1;
+		}
+		else {
+			return j;
+		}
+	}
+	
 	// Writes the current time.
 	public void writeTime() throws IOException {
 		doWrite(String.format("Z%d\n", System.nanoTime()), false);
@@ -103,26 +132,26 @@ public class LoggedArray <T> {
 		return arr.size();
 	}
 	
-	public T get(int i) throws IOException {
+	public int get(int i) throws IOException {
 		doWrite(String.format("r%d\n", i), true);
 		
 		return arr.get(i);
 	}
 	
-	public void set(int i, T val) throws IOException {
-		doWrite(String.format("w%d:%s\n", i, val.toString()), true);
+	public void set(int i, int val) throws IOException {
+		doWrite(String.format("w%d:%s\n", i, val), true);
 		
 		arr.set(i, val);
 	}
 	
-	public void add(T val) throws IOException {
-		doWrite(String.format("a:%s\n", val.toString()), true);
+	public void add(int val) throws IOException {
+		doWrite(String.format("a:%s\n", val), true);
 		
 		arr.add(val);
 	}
 	
-	public void add(int pos, T val) throws IOException {
-		doWrite(String.format("i%d:%s\n", pos, val.toString()), true);
+	public void add(int pos, int val) throws IOException {
+		doWrite(String.format("i%d:%s\n", pos, val), true);
 		
 		arr.add(pos, val);
 	}
@@ -130,7 +159,7 @@ public class LoggedArray <T> {
 	public void swap(int i, int j) throws IOException {
 		doWrite(String.format("s%d,%d\n", i, j), true);
 		
-		T temp = arr.get(i);
+		int temp = arr.get(i);
 		arr.set(i, arr.get(j));
 		arr.set(j, temp);
 	}

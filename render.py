@@ -2,13 +2,14 @@ from PIL import Image, ImageDraw, ImageFont
 import wave
 import math
 import struct
+import time
 
 # Takes a log file from LoggedArray and renders the array as a series of vertical columns.
 # The result is a series of frames recounting the history of the array. This is intended to be used to animate sorting algorithms.
 # Note: Although the Sorter and LoggedArray classes are generics which can handle many types, this program only works on arrays of integers.
 
 # Which file were the logs dumped into?
-logFileName = "log.txt"
+logFileName = "sublog.txt"
 
 # How many steps to execute between renders? Highlights and Unhighlights do not count as steps.
 stepsPerRender = 16
@@ -17,10 +18,10 @@ stepsPerRender = 16
 # This specifies a synchrony file output by a previous use of render.py.
 # If specified, output a video of the same length as the previous run which stays in sync with it.
 # Useful for generating videos of multiple arrays which were manipulated around the same time, as in the case of merge sort.
-synchronyFileIn = ""
+synchronyFileIn = "synchrony.txt"
 
 # If not empty, specifies the filename to output a synchrony file to.
-synchronyFileOut = "synchrony.txt"
+synchronyFileOut = ""
 
 if (synchronyFileIn != "" and synchronyFileIn == synchronyFileOut):
 	print("SynchronyFileIn and synchronyFileOut cannot be the same.")
@@ -40,7 +41,7 @@ videoFrameRate = 25
 # This determines how many steps those frequencies live for.
 audioDuration = 4
 
-audioVolume = 0.5
+audioVolume = 0.3
 
 # When an index is read or written to (or swapped with another) it gets highlighted.
 # For how many frames does it stay highlighted?
@@ -52,7 +53,7 @@ deadFrames = 50
 
 # Dimensions of the output frames.
 width = 1920
-height = 1080
+height = 540
 
 # Size of the black border surrounding the render on all sides.
 borderTop = 80
@@ -392,12 +393,22 @@ if synchronyFileIn != "":
 	
 	for i in range(len(synchronyData)):
 		synchronyData[i] = int( synchronyData[i] )
-	
+
+print("Rendering...")
+startTime = time.time()
+loadingSymbols = ["/", "|", "\\", "-"]
+indexPrintBarrier = 0
 
 moreFrames = True
 frameCounter = 0
 audioFrameCounter = 0
 while True:
+	loadingIndex = int((time.time() - startTime) * 2) % 4
+	
+	if sortingLog.index > indexPrintBarrier:
+		print("\r%c %.2f%%...    " % (loadingSymbols[loadingIndex], sortingLog.index / len(sortingLog.commands) * 100), end="")
+		indexPrintBarrier = sortingLog.index + 10
+	
 	if doSynchrony:
 		# Step forward until we have an accurate timer or there are no steps remaining.
 		# This should only ever take 1 step.
@@ -497,3 +508,7 @@ while True:
 	img.save("out/%03d.png" % frameCounter)
 	frameCounter += 1
 	sortingLog.renderWork(modifyHighlightDuration)
+
+print("")
+print("Finished in %.1f seconds." % (time.time() - startTime))
+print("Wrote %d frames; %d audio samples." % (frameCounter, audioFrameCounter))
