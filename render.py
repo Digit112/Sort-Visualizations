@@ -9,7 +9,7 @@ import time
 # Note: Although the Sorter and LoggedArray classes are generics which can handle many types, this program only works on arrays of integers.
 
 # Which file were the logs dumped into?
-logFileName = "sublog.txt"
+logFileName = "log.txt"
 
 # How many steps to execute between renders? Highlights and Unhighlights do not count as steps.
 stepsPerRender = 16
@@ -18,10 +18,10 @@ stepsPerRender = 16
 # This specifies a synchrony file output by a previous use of render.py.
 # If specified, output a video of the same length as the previous run which stays in sync with it.
 # Useful for generating videos of multiple arrays which were manipulated around the same time, as in the case of merge sort.
-synchronyFileIn = "synchrony.txt"
+synchronyFileIn = ""
 
 # If not empty, specifies the filename to output a synchrony file to.
-synchronyFileOut = ""
+synchronyFileOut = "synchrony.txt"
 
 if (synchronyFileIn != "" and synchronyFileIn == synchronyFileOut):
 	print("SynchronyFileIn and synchronyFileOut cannot be the same.")
@@ -53,7 +53,7 @@ deadFrames = 50
 
 # Dimensions of the output frames.
 width = 1920
-height = 540
+height = 1080
 
 # Size of the black border surrounding the render on all sides.
 borderTop = 80
@@ -274,6 +274,9 @@ class UnloggedArray:
 			
 			self.written[ind] = True
 		
+		elif command[0] == 'K':
+			pass
+		
 		elif command[0] == 'H':
 			delimiter = command.find(",")
 			if (delimiter == -1):
@@ -397,17 +400,12 @@ if synchronyFileIn != "":
 print("Rendering...")
 startTime = time.time()
 loadingSymbols = ["/", "|", "\\", "-"]
-indexPrintBarrier = 0
 
 moreFrames = True
 frameCounter = 0
 audioFrameCounter = 0
 while True:
 	loadingIndex = int((time.time() - startTime) * 2) % 4
-	
-	if sortingLog.index > indexPrintBarrier:
-		print("\r%c %.2f%%...    " % (loadingSymbols[loadingIndex], sortingLog.index / len(sortingLog.commands) * 100), end="")
-		indexPrintBarrier = sortingLog.index + 10
 	
 	if doSynchrony:
 		# Step forward until we have an accurate timer or there are no steps remaining.
@@ -444,6 +442,8 @@ while True:
 		
 		if deadFrames <= 0:
 			break
+	
+	print("\r%c %.2f%% (%d/%d steps) Rendering out/%03d.png" % (loadingSymbols[loadingIndex], sortingLog.index / len(sortingLog.commands) * 100, sortingLog.index, len(sortingLog.commands), frameCounter), end="")
 	
 	img = Image.new("RGB", (width, height), bgColor)
 	drw = ImageDraw.Draw(img)

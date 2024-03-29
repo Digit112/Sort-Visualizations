@@ -98,9 +98,10 @@ public class Sorter {
 		list.resetTime();
 		
 		boolean requiresSwaps = true;
+		int iters = 0;
 		while (requiresSwaps) {
 			requiresSwaps = false;
-			for (int i = 0; i < list.size()-1; i++) {
+			for (int i = iters; i < list.size()-1-iters; i++) {
 				if (list.get(i) > list.get(i+1)) {
 					list.swap(i, i+1);
 					requiresSwaps = true;
@@ -112,10 +113,94 @@ public class Sorter {
 			}
 			
 			requiresSwaps = false;
-			for (int i = list.size()-1; i > 0; i--) {
+			for (int i = list.size()-1-iters; i > iters; i--) {
 				if (list.get(i) < list.get(i-1)) {
 					list.swap(i, i-1);
 					requiresSwaps = true;
+				}
+			}
+			
+			iters++;
+		}
+	}
+	
+	// Shell sort.
+	// Treat the array as h interleaved arrays and run insertion sort on each of them.
+	// Repeat the process, modifying h each time, until h is 0, at which point we're done.
+	// In our case, h is set to list.size() * 3 / 5 and multiplied by 3/5 each round until it drops below 50.
+	// At that point, the sequence becomes 23, 10, 4, 1
+	// This represents an acceleration of Insertion Sort because pieces tend to move very quickly towards their final destination.
+	public static void shellSort(LoggedArray list) throws IOException {
+		System.out.println("Using shell sort...");
+		list.resetTime();
+		
+		int h = list.size() * 3 / 5;
+		
+		int[] predetermined = {23, 10, 4, 1, 0};
+		int predeterminedInd = -1;
+		
+		if (h < 50) {
+			predeterminedInd = 0;
+			h = predetermined[0];
+		}
+		
+		list.setTitle("Shell Sort (" + h + ")");
+		
+		// Repeatedly implement insertionSort.
+		while (h > 0) {
+			for (int i = h; i < list.size(); i++) {
+				int movVal = list.get(i);
+				for (int j = i - h; j >= 0; j -= h) {
+					int currentComp = list.get(j);
+					
+					if (movVal < currentComp) {
+						list.set(j + h, currentComp);
+						if (j - h < 0) {
+							list.set(j, movVal);
+						}
+					}
+					else {
+						list.set(j + h, movVal);
+						break;
+					}
+				}
+			}
+			
+			if (predeterminedInd == -1) {
+				h = h * 3 / 5;
+				if (h < 50) {
+					predeterminedInd = 0;
+				}
+			}
+			
+			if (predeterminedInd != -1) {
+				h = predetermined[predeterminedInd];
+				predeterminedInd++;
+			}
+			list.setTitle("Shell Sort (" + h + ")");
+		}
+	}
+	
+	// Comb sort.
+	// Repeatedly performs one bubble sort pass with decreasing values.
+	public static void combSort(LoggedArray list) throws IOException {
+		System.out.println("Using comb sort...");
+		list.setTitle("Comb Sort");
+		
+		final float K_DIV = (float) 1.3;
+		float kFloat = list.size();
+		int k = 1;
+		
+		boolean moreSwaps = true;
+		while (moreSwaps || k > 1) {
+			kFloat /= K_DIV;
+			k = (int) kFloat;
+			
+			moreSwaps = false;
+			for (int i = 0; i + k < list.size(); i++) {
+				if (list.get(i) > list.get(i+k)) {
+					list.swap(i, i+k);
+					moreSwaps = true;
 				}
 			}
 		}
@@ -445,7 +530,7 @@ public class Sorter {
 	
 	private static int findNewChampion(LoggedArray list, LoggedArray temp, int i, int roundSize, int maxRoundSize) throws IOException {
 		// Keep list busy for synchronization
-		list.get(0); list.get(0); list.get(0); list.get(0);
+		list.step(); list.step(); list.step(); list.step();
 		
 		int oldChampion = temp.get(i);
 		
@@ -475,6 +560,113 @@ public class Sorter {
 		}
 		
 		return Math.max(temp.get(contendersInd), temp.get(contendersInd + 1));
+	}
+	
+	// Bitonic sort.
+	// Repeatedly create bitonic sequences and combine them.
+	// Ultimately results in a sorted list.
+	public static void bitonicSort(LoggedArray list) throws IOException {
+		System.out.println("Using bitonic sort...");
+		list.setTitle("Bitonic Sort");
+		
+		// The largest power of two less than the size of the list.
+		int bitonicDiff = 1;
+		while (bitonicDiff < list.size()) {
+			bitonicDiff <<= 1;
+		}
+		bitonicDiff >>= 1;
+		
+		bitonicSortRecurse(list, 0, bitonicDiff, true);
+	}
+	
+	private static void bitonicSortRecurse(LoggedArray list, int start, int bitonicDiff, boolean doSortForward) throws IOException {
+		if (bitonicDiff == 0) {
+			return;
+		}
+		//System.out.println("Sort " + start + " to " + (start + bitonicDiff*2 - 1));
+		
+		bitonicSortRecurse(list, start, bitonicDiff/2, true);
+		bitonicSortRecurse(list, start + bitonicDiff, bitonicDiff/2, false);
+		
+		bitonicBoxRecurse(list, start, bitonicDiff, doSortForward);
+	}
+	
+	private static void bitonicBoxRecurse(LoggedArray list, int start, int bitonicDiff, boolean doSortForward) throws IOException {
+		if (bitonicDiff == 0) {
+			return;
+		}
+		//System.out.println("Box " + start + " to " + (start + bitonicDiff*2 - 1));
+		
+		for (int i = start; i < start + bitonicDiff; i++) {
+			int j = i + bitonicDiff;
+			
+			if (j >= list.size()) {
+				// TODO: This causes the sort to fail unless the array size is exactly a power of two.
+				// We must increase the available storage space and initialize all the extra space to maximum values.
+				continue;
+			}
+			
+			int a = list.get(i);
+			int b = list.get(j);
+			if (doSortForward) {
+				if (a > b) {
+					list.swap(i, j);
+				}
+			}
+			else {
+				if (b > a) {
+					list.swap(i, j);
+				}
+			}
+		}
+		
+		bitonicBoxRecurse(list, start, bitonicDiff/2, doSortForward);
+		bitonicBoxRecurse(list, start + bitonicDiff, bitonicDiff/2, doSortForward);
+	}
+	
+	// Smooth Sort
+	// Good luck figuring this one out lmao here's a link: https://www.keithschwarz.com/smoothsort/
+	// This one's pretty rough.
+	public static void smoothSort(LoggedArray list) throws IOException {
+		ArrayList<Integer> sizes = leonardify(list);
+	}
+	
+	// Converts an array to a series of leonardo trees with strictly decreasing size.
+	// Each is a special kind of max-heap.
+	// They are sorted from left to right in order of increasing root size.
+	private static ArrayList<Integer> leonardify(LoggedArray list) throws IOException {
+		ArrayList<Integer> sizes = new ArrayList<Integer>();
+		
+		// Repeatedly insert elements into an initially empty Leonardo forest
+		for (int i = 0; i < list.size(); i++) {
+			if (sizes.size() == 0) {
+				sizes.add(1);
+			}
+			else if (sizes.size() == 1) {
+				sizes.add(0);
+			}
+			else {
+				// If the right-most two trees are consecutive, merge them.
+				// The inserted element becomes their new root.
+				int leftSize = sizes.get(sizes.size() - 2);
+				int rightSize = sizes.get(sizes.size() - 1);
+				if (leftSize - rightSize == 1) {
+					sizes.set(sizes.size() - 2, leftSize + 1);
+					sizes.remove(sizes.size() - 1);
+				}
+				// Otherwise, add a new size-1 tree or a size-0 tree if the previous tree is size 1.
+				else {
+					if (rightSize == 1) {
+						sizes.add(0);
+					}
+					else {
+						sizes.add(1);
+					}
+				}
+			}
+		}
+		
+		return sizes;
 	}
 	
 	// Bogo Sort

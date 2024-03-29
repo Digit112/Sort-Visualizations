@@ -164,6 +164,11 @@ public class LoggedArray {
 		arr.set(j, temp);
 	}
 	
+	// Counts as a step in the final output. Good for synchronizing disparate arrays.
+	public void step() throws IOException {
+		doWrite("K\n", false);
+	}
+	
 	// highlight an index. This will appear in the log but will not effect the array.
 	// Setting the highlight a second time overwrites the previous highlight.
 	public void highlight(int i, int highlightVal) throws IOException {

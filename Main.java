@@ -4,7 +4,7 @@ import java.io.IOException;
 public class Main {
 	public static void main(String args[]) throws IOException {
 		// params
-		final int NUM_VALS = 512;
+		final int NUM_VALS = 280;
 		final int MAX_VAL = 1000;
 		
 		Random rand = new Random();
@@ -21,7 +21,7 @@ public class Main {
 		System.out.println(list);
 		
 		// CHANGE ME to desired sorting algorithm
-		Sorter.tournamentSort(list);
+		Sorter.combSort(list);
 		
 		list.close();
 		
