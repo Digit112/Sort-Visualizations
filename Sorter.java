@@ -71,6 +71,35 @@ public class Sorter {
 		System.out.println("Testing complete. No errors found.");
 	}
 	
+	public static void gnomeSort(LoggedArray list) throws IOException {
+		System.out.println("Using gnome sort...");
+		list.setTitle("Gnome Sort");
+		list.resetTime();
+		
+		int i = 1;
+		while (true) {
+			if (i == 0) {
+				i++;
+				continue;
+			}
+			
+			if (i == list.size()) {
+				return;
+			}
+			
+			int iVal = list.get(i);
+			int jVal = list.get(i-1);
+			
+			if (jVal > iVal) {
+				list.set2(i, i-1, jVal, iVal);
+				i--;
+			}
+			else {
+				i++;
+			}
+		}
+	}
+	
 	// Bubble Sort.
 	// Repeatedly iterate over the list and swap out of order elements.
 	public static void bubbleSort(LoggedArray list) throws IOException {
@@ -82,8 +111,10 @@ public class Sorter {
 		while (requiresSwaps) {
 			requiresSwaps = false;
 			for (int i = 0; i < list.size()-1; i++) {
-				if (list.get(i) > list.get(i+1)) {
-					list.swap(i, i+1);
+				int iVal = list.get(i);
+				int jVal = list.get(i+1);
+				if (iVal > jVal) {
+					list.set2(i, i+1, jVal, iVal);
 					requiresSwaps = true;
 				}
 			}
@@ -102,8 +133,10 @@ public class Sorter {
 		while (requiresSwaps) {
 			requiresSwaps = false;
 			for (int i = iters; i < list.size()-1-iters; i++) {
-				if (list.get(i) > list.get(i+1)) {
-					list.swap(i, i+1);
+				int iVal = list.get(i);
+				int jVal = list.get(i+1);
+				if (iVal > jVal) {
+					list.set2(i, i+1, jVal, iVal);
 					requiresSwaps = true;
 				}
 			}
@@ -114,8 +147,10 @@ public class Sorter {
 			
 			requiresSwaps = false;
 			for (int i = list.size()-1-iters; i > iters; i--) {
-				if (list.get(i) < list.get(i-1)) {
-					list.swap(i, i-1);
+				int iVal = list.get(i);
+				int jVal = list.get(i-1);
+				if (iVal < jVal) {
+					list.set2(i, i-1, jVal, iVal);
 					requiresSwaps = true;
 				}
 			}
@@ -185,7 +220,7 @@ public class Sorter {
 	// Repeatedly performs one bubble sort pass with decreasing values.
 	public static void combSort(LoggedArray list) throws IOException {
 		System.out.println("Using comb sort...");
-		list.setTitle("Comb Sort");
+		list.resetTime(); // TODO: redo comb sort.
 		
 		final float K_DIV = (float) 1.3;
 		float kFloat = list.size();
@@ -195,11 +230,14 @@ public class Sorter {
 		while (moreSwaps || k > 1) {
 			kFloat /= K_DIV;
 			k = (int) kFloat;
+			list.setTitle("Comb Sort (" + k + ")");
 			
 			moreSwaps = false;
 			for (int i = 0; i + k < list.size(); i++) {
-				if (list.get(i) > list.get(i+k)) {
-					list.swap(i, i+k);
+				int iVal = list.get(i);
+				int jVal = list.get(i+k);
+				if (iVal > jVal) {
+					list.set2(i, i+k, jVal, iVal);
 					moreSwaps = true;
 				}
 			}
@@ -237,7 +275,7 @@ public class Sorter {
 			
 			// Swap with current value, if current is not the minimum.
 			if (minIndex != i) {
-				list.swap(i, minIndex);
+				list.set2(i, minIndex, minVal, list.get(i));
 			}
 		}
 	}
@@ -254,8 +292,9 @@ public class Sorter {
 			int movVal = list.get(i);
 			for (int j = i-1; j >= 0; j--) {
 				// If unsorted value in question is smaller, move this element right once.
-				if (movVal < list.get(j)) {
-					list.set(j+1, list.get(j));
+				int jVal = list.get(j);
+				if (movVal < jVal) {
+					list.set(j+1, jVal);
 					if (j == 0) {
 						list.set(0, movVal);
 					}
@@ -337,9 +376,10 @@ public class Sorter {
 	public static void mergeSort(LoggedArray list) throws IOException {
 		System.out.println("Using merge sort...");
 		list.setTitle("Merge Sort");
+		list.resetTime(); // TODO: redo merge sort.
 		
 		LoggedArray temp = new LoggedArray(list.size(), 0, "sublog.txt");
-		temp.setTitle("Merge Sort - Temporary Storage");
+		temp.setTitle("Merge Sort - Temp Storage");
 		
 		list.resetTime();
 		temp.resetTime();
@@ -436,37 +476,45 @@ public class Sorter {
 	
 	// Repairs heap, assuming both heaps rooted at children are valid.
 	private static void siftDown(LoggedArray list, int root, int heapSize) throws IOException {
-		int lchild = list.binHeapChild(root, heapSize, true);
-		int rchild = list.binHeapChild(root, heapSize, false);
+		int lChild = list.binHeapChild(root, heapSize, true);
+		int rChild = list.binHeapChild(root, heapSize, false);
 		
-		if (lchild == -1) {
-			if (rchild == -1) {
+		if (lChild == -1) {
+			if (rChild == -1) {
 				return;
 			}
 			else {
-				if (list.get(root) < list.get(rchild)) {
-					list.swap(root, rchild);
-					siftDown(list, rchild, heapSize);
+				int rootVal = list.get(root);
+				int rChildVal = list.get(rChild);
+				if (rootVal < rChildVal) {
+					list.set2(root, rChild, rChildVal, rootVal);
+					siftDown(list, rChild, heapSize);
 				}
 			}
 		}
 		else {
-			if (rchild == -1) {
-				if (list.get(root) < list.get(lchild)) {
-					list.swap(root, lchild);
-					siftDown(list, lchild, heapSize);
+			if (rChild == -1) {
+				int rootVal = list.get(root);
+				int lChildVal = list.get(lChild);
+				if (rootVal < lChildVal) {
+					list.set2(root, lChild, lChildVal, rootVal);
+					siftDown(list, lChild, heapSize);
 				}
 			}
 			else {
-				int lchildVal = list.get(lchild);
-				int rchildVal = list.get(rchild);
-				int maxChild = lchild;
-				if (rchildVal > lchildVal) {
-					maxChild = rchild;
+				int rootVal = list.get(root);
+				int lChildVal = list.get(lChild);
+				int rChildVal = list.get(rChild);
+				
+				int maxChild = lChild;
+				int maxChildVal = lChildVal;
+				if (rChildVal > lChildVal) {
+					maxChild = rChild;
+					maxChildVal = rChildVal;
 				}
 				
-				if (list.get(root) < list.get(maxChild)) {
-					list.swap(root, maxChild);
+				if (rootVal < maxChildVal) {
+					list.set2(root, maxChild, maxChildVal, rootVal);
 					siftDown(list, maxChild, heapSize);
 				}
 			}
@@ -480,7 +528,8 @@ public class Sorter {
 	// This is a variant of heapSort.
 	public static void tournamentSort(LoggedArray list) throws IOException {
 		System.out.println("Using tournament sort...");
-		list.setTitle("Tournament Sort (Heap sort)");
+		list.setTitle("Tournament Sort (Heap Sort but worse)");
+		list.resetTime(); // TODO: redo tournament sort.
 		
 		// Get max round size by rounding up to the nearest exponent of 2.
 		int maxRoundSize = 1;
@@ -511,7 +560,7 @@ public class Sorter {
 				}
 				else {
 					temp.set(start + i/roundSize, b);
-					list.swap(i, i + roundDiff);
+					list.set2(i, i + roundDiff, b, a);
 				}
 			}
 			// If some value didn't have a competitor to compare with, it moves on to the next round.
@@ -568,6 +617,7 @@ public class Sorter {
 	public static void bitonicSort(LoggedArray list) throws IOException {
 		System.out.println("Using bitonic sort...");
 		list.setTitle("Bitonic Sort");
+		list.resetTime(); // TODO: redo bitonic sort.
 		
 		// The largest power of two less than the size of the list.
 		int bitonicDiff = 1;
@@ -630,6 +680,7 @@ public class Sorter {
 	public static void smoothSort(LoggedArray list) throws IOException {
 		System.out.println("Using smooth sort...");
 		list.setTitle("Smooth Sort - Construction");
+		list.resetTime();
 		
 		ArrayList<Integer> sizes = leonardifyForest(list);
 		
@@ -753,8 +804,10 @@ public class Sorter {
 			// If this tree has no children, we swap the root node (the only node)
 			// with the root of the previous tree if and only if that node is greater than this node.
 			if (currTreeSize == 1) {
-				if (list.get(prevRootInd) > list.get(currRootInd)) {
-					list.swap(prevRootInd, currRootInd);
+				int prevRootVal = list.get(prevRootInd);
+				int currRootVal = list.get(currRootInd);
+				if (prevRootVal > currRootVal) {
+					list.set2(prevRootInd, currRootInd, currRootVal, prevRootVal);
 				}
 				else {
 					// If we can't swap, we're done. We go on to heapify this tree.
@@ -769,13 +822,14 @@ public class Sorter {
 				int lChildInd = currRootInd - rightChildSize - 1;
 				int rChildInd = currRootInd - 1;
 				
+				int currRootVal = list.get(currRootInd);
 				int prevRootVal = list.get(prevRootInd);
 				if (
-					prevRootVal > list.get(currRootInd) &&
+					prevRootVal > currRootVal &&
 					prevRootVal > list.get(lChildInd) &&
 					prevRootVal > list.get(rChildInd)
 				) {
-					list.swap(prevRootInd, currRootInd);
+					list.set2(prevRootInd, currRootInd, currRootVal, prevRootVal);
 				}
 				else {
 					// If we can't swap, we're done. We go on to heapify this tree.
@@ -817,11 +871,11 @@ public class Sorter {
 			return;
 		}
 		else if (leftVal > rightVal) {
-			list.swap(lChildInd, rootIndex);
+			list.set2(lChildInd, rootIndex, currVal, leftVal);
 			leonardoSiftDown(list, lChildInd, treeLSize-1);
 		}
 		else {
-			list.swap(rChildInd, rootIndex);
+			list.set2(rChildInd, rootIndex, currVal, rightVal);
 			leonardoSiftDown(list, rChildInd, treeLSize-2);
 		}
 	}

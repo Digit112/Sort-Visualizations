@@ -144,6 +144,16 @@ public class LoggedArray {
 		arr.set(i, val);
 	}
 	
+	// Sets two values. In the render, they will be colored as if swap(i, j) had been called.
+	// This is useful for not causing duplicate reads when swapping elements that have already been read for comparison.
+	public void set2(int i, int j, int val1, int val2) throws IOException {
+		doWrite(String.format("W%d:%s\n", i, val1), true);
+		doWrite(String.format("W%d:%s\n", j, val2), true);
+		
+		arr.set(i, val1);
+		arr.set(j, val2);
+	}
+	
 	public void add(int val) throws IOException {
 		doWrite(String.format("a:%s\n", val), true);
 		

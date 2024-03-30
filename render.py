@@ -12,7 +12,7 @@ import time
 logFileName = "log.txt"
 
 # How many steps to execute between renders? Highlights and Unhighlights do not count as steps.
-stepsPerRender = 16
+stepsPerRender = 36
 
 # If this is not an empty string, it will override stepsPerRender.
 # This specifies a synchrony file output by a previous use of render.py.
@@ -71,6 +71,9 @@ doDrawTime = True
 doDrawReadWrites = True
 doDrawSize = True
 
+# The font to write text with
+fontFile = "./ubuntu_mono/UbuntuMono-R.ttf"
+
 # Colors
 bgColor      = (0,   0,   0  ) # Background
 fgColor      = (250, 250, 250) # Font
@@ -85,6 +88,9 @@ highlightColors = [
 	(20, 20, 240),
 	(220, 20, 220)
 ]
+
+# Draws "Thank for Watching!" Over the center of the video for 5 seconds. Then fades out.
+doThanks = False;
 
 class UnloggedArray:
 	def __init__(self, inFileName):
@@ -240,6 +246,24 @@ class UnloggedArray:
 			if self.audioFout is not None:
 				self.freq = self.addFreqFromVal(val)
 		
+		elif command[0] == 'W':
+			if (strStart == 0):
+				print("Error, expected ':' after write command.")
+			
+			val = int( command[strStart:] )
+			ind = int( command[1:strStart-1] )
+			
+			if val > self.maxVal:
+				self.maxVal = val
+			
+			self.arr[ind] = val
+			
+			self.swapped[ind] = 0
+			self.writes += 1
+			
+			if self.audioFout is not None:
+				self.freq = self.addFreqFromVal(val)
+		
 		elif command[0] == 's':
 			delimiter = command.find(",")
 			if (delimiter == -1):
@@ -381,7 +405,8 @@ def tripleAgeMin(a, b, c):
 
 sortingLog = UnloggedArray(logFileName)
 
-fnt = ImageFont.truetype("ubuntu mono/UbuntuMono-R.ttf", 20)
+fnt = ImageFont.truetype(fontFile, 20)
+thxFnt = ImageFont.truetype(fontFile, 100)
 
 drwWidth = width - (borderLeft + borderRight)
 drwHeight = height - (borderTop + borderBottom)
@@ -503,6 +528,22 @@ while True:
 	
 	if doDrawSize:
 		drw.text((810, 10), "Size: %s" % (len(sortingLog.arr)), fill=fgColor, font=fnt)
+	
+	# Thank you text.
+	if doThanks:
+		currentTimeSec = frameCounter / videoFrameRate
+		
+		opacity = 255
+		if currentTimeSec >= 5:
+			opacity = 0
+		
+		if opacity > 0:
+			bbox = thxFnt.getbbox("Thanks for Watching!")
+			textWidth2 = abs(bbox[2] - bbox[0]) / 2
+			textHeight2 = abs(bbox[3] - bbox[1]) / 2
+			
+			drw.rectangle([(width/2 - textWidth2 - 30, height/2 - textHeight2 - 30), (width/2 + textWidth2 + 30, height/2 + textHeight2 + 30)], fill=bgColor)
+			drw.text((width/2 - textWidth2, height/2 - textHeight2), "Thanks for Watching!", fill=fgColor, font=thxFnt)
 	
 	# Save this image.
 	img.save("out/%03d.png" % frameCounter)
