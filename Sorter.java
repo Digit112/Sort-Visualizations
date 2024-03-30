@@ -628,22 +628,51 @@ public class Sorter {
 	// Good luck figuring this one out lmao here's a link: https://www.keithschwarz.com/smoothsort/
 	// This one's pretty rough.
 	public static void smoothSort(LoggedArray list) throws IOException {
-		ArrayList<Integer> sizes = leonardify(list);
+		System.out.println("Using smooth sort...");
+		list.setTitle("Smooth Sort - Construction");
+		
+		ArrayList<Integer> sizes = leonardifyForest(list);
+		
+		list.setTitle("Smooth Sort - Extraction");
+		
+		deleonardifyForest(list, sizes);
+	}
+	
+	private static int getLeonardoNumber(int index) {
+		if (index < 2) {
+			return 1;
+		}
+		
+		int a = 1;
+		int b = 1;
+		for (int i = 1; i < index; i++) {
+			int c = a + b + 1;
+			a = b;
+			b = c;
+		}
+		return b;
 	}
 	
 	// Converts an array to a series of leonardo trees with strictly decreasing size.
 	// Each is a special kind of max-heap.
 	// They are sorted from left to right in order of increasing root size.
-	private static ArrayList<Integer> leonardify(LoggedArray list) throws IOException {
+	private static ArrayList<Integer> leonardifyForest(LoggedArray list) throws IOException {
 		ArrayList<Integer> sizes = new ArrayList<Integer>();
 		
-		// Repeatedly insert elements into an initially empty Leonardo forest
+		// Repeatedly insert elements into an initially empty Leonardo forest.
 		for (int i = 0; i < list.size(); i++) {
+			// If the forest is empty, start with a tree of size = 1
 			if (sizes.size() == 0) {
 				sizes.add(1);
 			}
+			// If the forest has one element, we either add 0 to follow a tree of size 1 or we add a tree of size 1.
 			else if (sizes.size() == 1) {
-				sizes.add(0);
+				if (sizes.get(0) == 1) {
+					sizes.add(0);
+				}
+				else {
+					sizes.add(1);
+				}
 			}
 			else {
 				// If the right-most two trees are consecutive, merge them.
@@ -664,9 +693,137 @@ public class Sorter {
 					}
 				}
 			}
+			
+			leonardoInsertionSortRoots(list, sizes, i, sizes.size() - 1);
 		}
 		
 		return sizes;
+	}
+	
+	// Repeatedly extract the top element from the leonardo tree forest and repair the result.
+	private static void deleonardifyForest(LoggedArray list, ArrayList<Integer> sizes) throws IOException {
+		for (int i = list.size() - 1; i >= 0; i--) {
+			int currTreeLSize = sizes.get(sizes.size()-1);
+			int currTreeSize = getLeonardoNumber(currTreeLSize);
+			
+			// If the current tree size is 1, we can completely remove it without impacting the tree.
+			// Furthermore, because it is the max element (by virtue of being on the right) and the right-most element (by virtue of being the max element)
+			// It is already in the correct location. Update sizes and skip to the next element.
+			if (currTreeSize == 1) {
+				sizes.remove( sizes.size()-1 );
+				continue;
+			}
+			
+			// Otherwise, get the children and re-sort the roots to repair the tree.
+			int rChildSize = getLeonardoNumber(currTreeLSize - 2);
+			int lChildSize = getLeonardoNumber(currTreeLSize - 1);
+			
+			int lChildInd = i - rChildSize - 1;
+			int rChildInd = i - 1;
+			
+			// Update the sizes array.
+			sizes.set(sizes.size()-1, currTreeLSize - 1);
+			sizes.add(currTreeLSize - 2);
+			
+			leonardoInsertionSortRoots(list, sizes, lChildInd, sizes.size()-2);
+			leonardoInsertionSortRoots(list, sizes, rChildInd, sizes.size()-1);
+		}
+	}
+	
+	// Perform modified insertion sort to ensure the roots are ordered in ascending order.
+	// Everything except the right-most root will have been put in order by previous insertion sorts.
+	// Do not perform a swap which breaks the current tree. Instead, just sift-down the current tree.
+	private static void leonardoInsertionSortRoots(LoggedArray list, ArrayList<Integer> sizes, int currRootInd, int treeIndex) throws IOException {
+		// Each insertion adds 1 element, thus the forest holds i+1 items.
+		// The root node of the right-most tree is all he way to the right.
+		while (treeIndex > 0) {
+			// Note that the values in sizes index the Leonardo sequence.
+			// They DO NOT give the actual sizes of the trees involved.
+			int currTreeSize = getLeonardoNumber(sizes.get(treeIndex));
+			int prevRootInd = currRootInd - currTreeSize;
+			
+			// If the previous tree does not exist, then the root has moved as far left as it ever will.
+			// The loop should have exited at this point, because treeIndex is supposed to have been set to 0 by the previous loop.
+			if (prevRootInd < 0) {
+				assert prevRootInd == -1 : "While inserting value, earliest tree appears to go beyond the array start.";
+				assert false : "Reached last tree, but the loop should have exited beecause this means treeIndex should be 0.";
+				break;
+			}
+			
+			// If this tree has no children, we swap the root node (the only node)
+			// with the root of the previous tree if and only if that node is greater than this node.
+			if (currTreeSize == 1) {
+				if (list.get(prevRootInd) > list.get(currRootInd)) {
+					list.swap(prevRootInd, currRootInd);
+				}
+				else {
+					// If we can't swap, we're done. We go on to heapify this tree.
+					break;
+				}
+			}
+			// If this tree has children, we must not swap this root with the previous root if it will break this tree.
+			// If it will, we can ensure that the roots are in the correct order by heapifying this tree.
+			else {
+				int rightChildSize = getLeonardoNumber(sizes.get(treeIndex)-2);
+				
+				int lChildInd = currRootInd - rightChildSize - 1;
+				int rChildInd = currRootInd - 1;
+				
+				int prevRootVal = list.get(prevRootInd);
+				if (
+					prevRootVal > list.get(currRootInd) &&
+					prevRootVal > list.get(lChildInd) &&
+					prevRootVal > list.get(rChildInd)
+				) {
+					list.swap(prevRootInd, currRootInd);
+				}
+				else {
+					// If we can't swap, we're done. We go on to heapify this tree.
+					break;
+				}
+			}
+			
+			// If we got here, we swapped. Now we look at the previou tree.
+			currRootInd = prevRootInd;
+			treeIndex--;
+		}
+		
+		// Heapify the last tree that we moved the new root to.
+		leonardoSiftDown(list, currRootInd, sizes.get(treeIndex));
+	}
+	
+	private static void leonardoSiftDown(LoggedArray list, int rootIndex, int treeLSize) throws IOException {
+		// Note that the values in sizes index the Leonardo sequence.
+		// They DO NOT give the actual sizes of the trees involved.
+		int currTreeSize = getLeonardoNumber(treeLSize);
+		
+		// If the size of this tree is 1, it is already valid.
+		// 2 is not a Leonardo number. Therefore, if the tree has more than 1 elements, it must have both children.
+		if (currTreeSize == 1) {
+			return;
+		}
+		
+		int lChildSize = getLeonardoNumber(treeLSize-1);
+		int rChildSize = getLeonardoNumber(treeLSize-2);
+		
+		int lChildInd = rootIndex - rChildSize - 1;
+		int rChildInd = rootIndex - 1;
+		
+		int currVal = list.get(rootIndex);
+		int leftVal = list.get(lChildInd);
+		int rightVal = list.get(rChildInd);
+		
+		if (currVal > leftVal && currVal > rightVal) {
+			return;
+		}
+		else if (leftVal > rightVal) {
+			list.swap(lChildInd, rootIndex);
+			leonardoSiftDown(list, lChildInd, treeLSize-1);
+		}
+		else {
+			list.swap(rChildInd, rootIndex);
+			leonardoSiftDown(list, rChildInd, treeLSize-2);
+		}
 	}
 	
 	// Bogo Sort
