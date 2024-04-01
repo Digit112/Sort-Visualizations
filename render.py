@@ -213,11 +213,13 @@ class UnloggedArray:
 			self.arr.append( val )
 			self.highlights.append(None)
 			self.read.append(None)
-			self.written.append(0)
+			self.written.append(None)
 			self.swapped.append(None)
 			
 			if self.audioFout is not None:
 				self.freq = self.addFreqFromVal(val)
+			
+			self.step()
 		
 		elif command[0] == 'r':
 			ind = int( command[1:] )
@@ -433,6 +435,9 @@ while True:
 	loadingIndex = int((time.time() - startTime) * 2) % 4
 	
 	if doSynchrony:
+		if SynchronyFileIn == "":
+			print("Error: SynchronyFileIn has not been set.")
+		
 		# Step forward until we have an accurate timer or there are no steps remaining.
 		# This should only ever take 1 step.
 		while (sortingLog.currentTime == -1):
