@@ -2,10 +2,18 @@ import java.util.Random;
 import java.io.IOException;
 
 public class Main {
+	enum PopulationType {
+		Random,  // (Independently) randomly initialize each element.
+		Sorted,  // Initialize each element proportional to its index.
+		Shuffle, // Initialize each element proportional to its index, then shuffle it.
+		Reverse  // Initialize each element proportional to its index, but reversed.
+	}
+	
 	public static void main(String args[]) throws IOException {
 		// params
 		final int NUM_VALS = 500;
 		final int MAX_VAL = 1000;
+		final PopulationType popType = PopulationType.Sorted;
 		
 		Random rand = new Random();
 		
@@ -13,15 +21,39 @@ public class Main {
 		
 		LoggedArray list = new LoggedArray(NUM_VALS, "log.txt");
 		list.setTitle("Populating list...");
-		for (int i = 0; i < NUM_VALS; i++) {
-			list.add(rand.nextInt(MAX_VAL));
+		switch (popType) {
+			case PopulationType.Random:
+				for (int i = 0; i < NUM_VALS; i++) {
+					list.add(rand.nextInt(MAX_VAL));
+				}
+				break;
+			
+			case PopulationType.Sorted:
+				for (int i = 0; i < NUM_VALS; i++) {
+					list.add((int) ((float) (i + 1) / NUM_VALS * MAX_VAL));
+				}
+				break;
+			
+			case PopulationType.Shuffle:
+				for (int i = 0; i < NUM_VALS; i++) {
+					list.add((int) ((float) (i + 1) / NUM_VALS * MAX_VAL));
+				}
+				list.setTitle("Shuffling list...");
+				// TODO: Add code to shuffle.
+				break;
+			
+			case PopulationType.Reverse:
+				for (int i = 0; i < NUM_VALS; i++) {
+					list.add((int) ((float) (NUM_VALS - i) / NUM_VALS * MAX_VAL));
+				}
+				break;
 		}
 		
 		System.out.println("Unsorted:");
 		System.out.println(list);
 		
 		// CHANGE ME to desired sorting algorithm
-		Sorter.smoothSort(list);
+		Sorter.bitonicSort(list);
 		
 		list.close();
 		
