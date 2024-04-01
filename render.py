@@ -216,9 +216,6 @@ class UnloggedArray:
 			self.written.append(None)
 			self.swapped.append(None)
 			
-			if self.audioFout is not None:
-				self.freq = self.addFreqFromVal(val)
-			
 			self.step()
 		
 		elif command[0] == 'r':
