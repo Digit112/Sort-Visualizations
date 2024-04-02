@@ -6,14 +6,18 @@ public class Main {
 		Random,  // (Independently) randomly initialize each element.
 		Sorted,  // Initialize each element proportional to its index.
 		Shuffle, // Initialize each element proportional to its index, then shuffle it.
-		Reverse  // Initialize each element proportional to its index, but reversed.
+		Reverse, // Initialize each element proportional to its index, but reversed.
+		Almost   // Almost sorted.
 	}
 	
 	public static void main(String args[]) throws IOException {
 		// params
-		final int NUM_VALS = 500;
+		final int NUM_VALS = 1000;
 		final int MAX_VAL = 1000;
 		final PopulationType popType = PopulationType.Sorted;
+		
+		// Only applies when popType is "Almost".
+		int maxSwapDis = NUM_VALS / 25;
 		
 		Random rand = new Random();
 		
@@ -39,12 +43,28 @@ public class Main {
 					list.add((int) ((float) (i + 1) / NUM_VALS * MAX_VAL));
 				}
 				list.setTitle("Shuffling list...");
-				// TODO: Add code to shuffle.
+				for (int i = 0; i < NUM_VALS-1; i++) {
+					int randVal = rand.nextInt(NUM_VALS - i) + i;
+					list.swap(i, randVal);
+				}
 				break;
 			
 			case PopulationType.Reverse:
 				for (int i = 0; i < NUM_VALS; i++) {
 					list.add((int) ((float) (NUM_VALS - i) / NUM_VALS * MAX_VAL));
+				}
+				break;
+			
+			case PopulationType.Almost:
+				for (int i = 0; i < NUM_VALS; i++) {
+					list.add((int) ((float) (i + 1) / NUM_VALS * MAX_VAL));
+				}
+				list.setTitle("Shuffling list...");
+				for (int i = 0; i < NUM_VALS-1; i++) {
+					int min = Math.max(0, i - maxSwapDis);
+					int max = Math.min(NUM_VALS - 1, i + maxSwapDis);
+					int randVal = rand.nextInt(max - min) + min;
+					list.swap(i, randVal);
 				}
 				break;
 		}
@@ -53,7 +73,7 @@ public class Main {
 		System.out.println(list);
 		
 		// CHANGE ME to desired sorting algorithm
-		Sorter.bitonicSort(list);
+		Sorter.heapSort(list);
 		
 		list.close();
 		

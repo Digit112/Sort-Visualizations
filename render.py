@@ -12,7 +12,7 @@ import time
 logFileName = "log.txt"
 
 # How many steps to execute between renders? Highlights and Unhighlights do not count as steps.
-stepsPerRender = 36
+stepsPerRender = 40
 
 # If this is not an empty string, it will override stepsPerRender.
 # This specifies a synchrony file output by a previous use of render.py.
@@ -53,7 +53,7 @@ deadFrames = 50
 
 # Dimensions of the output frames.
 width = 1920
-height = 1080
+height = 540
 
 # Size of the black border surrounding the render on all sides.
 borderTop = 80
@@ -191,166 +191,170 @@ class UnloggedArray:
 				del self.audioFreqArr[0]
 				del self.audioFreqAge[0]
 		
-		if self.index >= len(self.commands):
-			return False
-		
-		command = ""
-		while len(command) == 0:
-			command = self.commands[self.index]
-			self.index += 1
-		
-		strStart = command.find(":") + 1
-		
-		if command[0] == 'a':
-			if (strStart == 0):
-				print("Error, expected ':' after add command.")
+		doAnotherStep = True
+		while doAnotherStep:
+			doAnotherStep = False
 			
-			val = int(command[strStart:])
+			if self.index >= len(self.commands):
+				return False
 			
-			if val > self.maxVal:
-				self.maxVal = val
+			command = ""
+			while len(command) == 0:
+				command = self.commands[self.index]
+				self.index += 1
 			
-			self.arr.append( val )
-			self.highlights.append(None)
-			self.read.append(None)
-			self.written.append(None)
-			self.swapped.append(None)
+			strStart = command.find(":") + 1
 			
-			self.step()
-		
-		elif command[0] == 'r':
-			ind = int( command[1:] )
-			self.read[ind] = 0;
+			if command[0] == 'a':
+				if (strStart == 0):
+					print("Error, expected ':' after add command.")
+				
+				val = int(command[strStart:])
+				
+				if val > self.maxVal:
+					self.maxVal = val
+				
+				self.arr.append( val )
+				self.highlights.append(None)
+				self.read.append(None)
+				self.written.append(None)
+				self.swapped.append(None)
+				
+				doAnotherStep = True
 			
-			self.reads += 1
-			
-			if self.audioFout is not None:
-				self.freq = self.addFreqFromVal(self.arr[ind])
-		
-		elif command[0] == 'w':
-			if (strStart == 0):
-				print("Error, expected ':' after write command.")
-			
-			val = int( command[strStart:] )
-			ind = int( command[1:strStart-1] )
-			
-			if val > self.maxVal:
-				self.maxVal = val
-			
-			self.arr[ind] = val
-			
-			self.written[ind] = 0
-			self.writes += 1
-			
-			if self.audioFout is not None:
-				self.freq = self.addFreqFromVal(val)
-		
-		elif command[0] == 'W':
-			if (strStart == 0):
-				print("Error, expected ':' after write command.")
-			
-			val = int( command[strStart:] )
-			ind = int( command[1:strStart-1] )
-			
-			if val > self.maxVal:
-				self.maxVal = val
-			
-			self.arr[ind] = val
-			
-			self.swapped[ind] = 0
-			self.writes += 1
-			
-			if self.audioFout is not None:
-				self.freq = self.addFreqFromVal(val)
-		
-		elif command[0] == 's':
-			delimiter = command.find(",")
-			if (delimiter == -1):
-				print("Error, expected ',' after swap command.")
-			
-			ind1 = int( command[1:delimiter] )
-			ind2 = int( command[delimiter+1:] )
-			
-			temp = self.arr[ind1]
-			self.arr[ind1] = self.arr[ind2]
-			self.arr[ind2] = temp
-			
-			self.swapped[ind1] = 0
-			self.swapped[ind2] = 0
-			self.reads += 2
-			self.writes += 2
-			
-			if self.audioFout is not None:
-				self.freq = self.addFreqFromVal((self.arr[ind1] + self.arr[ind2]) / 2)
-		
-		elif command[0] == 'i':
-			if (strStart == -1):
-				print("Error, expected ':' after swap command.")
-			
-			val = int( command[strStart:] )
-			ind = int( command[1:strStart] )
-			
-			if val > self.maxVal:
-				self.maxVal = val
-			
-			self.arr.insert(ind, val)
-			
-			self.written[ind] = True
-		
-		elif command[0] == 'K':
-			pass
-		
-		elif command[0] == 'H':
-			delimiter = command.find(",")
-			if (delimiter == -1):
-				print("Error, expected ',' after highlight command.")
-			
-			ind = int( command[1:delimiter] )
-			val = int( command[delimiter+1:] )
-			
-			self.highlights[ind] = val
-			
-			self.step()
-		
-		elif command[0] == 'U':
-			if command[1] == '*':
-				for i in range(0, len(self.highlights)):
-					self.highlights[i] = None
-			
-			else:
+			elif command[0] == 'r':
 				ind = int( command[1:] )
-				self.highlights[ind] = None
+				self.read[ind] = 0;
+				
+				self.reads += 1
+				
+				if self.audioFout is not None:
+					self.freq = self.addFreqFromVal(self.arr[ind])
 			
-			self.step()
-		
-		elif command[0] == 'T':
-			if (strStart == -1):
-				print("Error, expected ':' after title command.")
+			elif command[0] == 'w':
+				if (strStart == 0):
+					print("Error, expected ':' after write command.")
+				
+				val = int( command[strStart:] )
+				ind = int( command[1:strStart-1] )
+				
+				if val > self.maxVal:
+					self.maxVal = val
+				
+				self.arr[ind] = val
+				
+				self.written[ind] = 0
+				self.writes += 1
+				
+				if self.audioFout is not None:
+					self.freq = self.addFreqFromVal(val)
+			
+			elif command[0] == 'W':
+				if (strStart == 0):
+					print("Error, expected ':' after write command.")
+				
+				val = int( command[strStart:] )
+				ind = int( command[1:strStart-1] )
+				
+				if val > self.maxVal:
+					self.maxVal = val
+				
+				self.arr[ind] = val
+				
+				self.swapped[ind] = 0
+				self.writes += 1
+				
+				if self.audioFout is not None:
+					self.freq = self.addFreqFromVal(val)
+			
+			elif command[0] == 's':
+				delimiter = command.find(",")
+				if (delimiter == -1):
+					print("Error, expected ',' after swap command.")
+				
+				ind1 = int( command[1:delimiter] )
+				ind2 = int( command[delimiter+1:] )
+				
+				temp = self.arr[ind1]
+				self.arr[ind1] = self.arr[ind2]
+				self.arr[ind2] = temp
+				
+				self.swapped[ind1] = 0
+				self.swapped[ind2] = 0
+				self.reads += 2
+				self.writes += 2
+				
+				if self.audioFout is not None:
+					self.freq = self.addFreqFromVal((self.arr[ind1] + self.arr[ind2]) / 2)
+			
+			elif command[0] == 'i':
+				if (strStart == -1):
+					print("Error, expected ':' after swap command.")
+				
+				val = int( command[strStart:] )
+				ind = int( command[1:strStart] )
+				
+				if val > self.maxVal:
+					self.maxVal = val
+				
+				self.arr.insert(ind, val)
+				
+				self.written[ind] = True
+			
+			elif command[0] == 'K':
+				pass
+			
+			elif command[0] == 'H':
+				delimiter = command.find(",")
+				if (delimiter == -1):
+					print("Error, expected ',' after highlight command.")
+				
+				ind = int( command[1:delimiter] )
+				val = int( command[delimiter+1:] )
+				
+				self.highlights[ind] = val
+				
+				doAnotherStep = True
+			
+			elif command[0] == 'U':
+				if command[1] == '*':
+					for i in range(0, len(self.highlights)):
+						self.highlights[i] = None
+				
+				else:
+					ind = int( command[1:] )
+					self.highlights[ind] = None
+				
+				doAnotherStep = True
+			
+			elif command[0] == 'T':
+				if (strStart == -1):
+					print("Error, expected ':' after title command.")
 
-			self.title = command[strStart:]
+				self.title = command[strStart:]
+				
+				doAnotherStep = True
 			
-			self.step()
-		
-		elif command[0] == 'Z':
-			self.currentTime = int( command[1:] )
+			elif command[0] == 'Z':
+				self.currentTime = int( command[1:] )
+				
+				if self.firstTime == -1:
+					self.firstTime = self.currentTime
+					self.startTime = self.currentTime
+				
+				doAnotherStep = True
 			
-			if self.firstTime == -1:
-				self.firstTime = self.currentTime
+			elif command[0] == 'Y':
+				self.currentTime = int( command[1:] )
 				self.startTime = self.currentTime
-			
-			self.step()
-		
-		elif command[0] == 'Y':
-			self.currentTime = int( command[1:] )
-			self.startTime = self.currentTime
-			
-			if self.firstTime == -1:
-				self.firstTime = self.currentTime
-			
-			self.step()
-			
-		else:
-			print("Command '" + command[0] + "' not recognized.")
+				
+				if self.firstTime == -1:
+					self.firstTime = self.currentTime
+				
+				doAnotherStep = True
+				
+			else:
+				print("Command '" + command[0] + "' not recognized.")
 		
 		# Recalculate audio frequency.
 		if self.audioFout is not None:
@@ -432,7 +436,7 @@ while True:
 	loadingIndex = int((time.time() - startTime) * 2) % 4
 	
 	if doSynchrony:
-		if SynchronyFileIn == "":
+		if synchronyFileIn == "":
 			print("Error: SynchronyFileIn has not been set.")
 		
 		# Step forward until we have an accurate timer or there are no steps remaining.
